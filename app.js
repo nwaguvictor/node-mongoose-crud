@@ -8,10 +8,11 @@ app.use(express.urlencoded({ extended: true }))
 app.use('/users', require('./routes/userRoutes'));
 
 app.use((err, req, res, next) => {
-    console.log(err);
+    err.message = err.message || 'something went wrong';
+    console.log(err.message);
     res.status(500).json({
         status: 'fail',
-        message: 'something went wrong'
+        message: err.message
     })
 }) 
 

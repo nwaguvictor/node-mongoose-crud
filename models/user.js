@@ -1,4 +1,6 @@
 const { Schema, model } = require('mongoose');
+const { promisify } = require('util');
+const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
 
@@ -63,6 +65,10 @@ userSchema.pre(/^find/, function (next) {
 // Instance method
 userSchema.methods.confirmPassword = async (userPassword, dbPassword) => {
     return await bcrypt.compare(userPassword, dbPassword);
+}
+
+userSchema.methods.generateToken = function () {
+    return jwt.sign({ id: this._id, role: this.role }, 'secret', { expiresIn: '90d' });
 }
 
 // userSchema.static('findByEmail', function (email) {

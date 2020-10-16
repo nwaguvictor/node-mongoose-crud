@@ -1,7 +1,26 @@
+const { promisify } = require('util');
+const jwt = require('jsonwebtoken');
 const User = require('./../models/user');
 const { asyncWrapper } = require('./../utils/helpers');
 
 const controller = {
+    foundUser: asyncWrapper(async (req, res, next) => {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = await promisify(jwt.verify)(token, 'secret');
+        const foundUser = await User.findById(decoded.id).select("+role");
+        if (!foundUser) return next(Error('User with that token not found. please log in again'));
+
+        req.user = foundUser;
+        next();
+    }),
+
+    auth: asyncWrapper(async (req, res, next) => {
+        if (req.user.role !== 'admin') {
+            return next(Error('Access denied'))
+        }
+        next();
+    }),
+
     view: asyncWrapper(async (req, res, next) => {
         const users = await User.find().select('-password');
         res.status(200).json({
@@ -51,7 +70,10 @@ const controller = {
         }
 
         //at this point the User is Authenticated, log them in
-        // sign jwt 
+        // sign jwt
+        const token = user.generateToken();
+        res.header('authorization', token);
+        res.cookie('jwt', token);
         res.status(200).json({
             status: 'success',
             message: 'user logged in successfully'
